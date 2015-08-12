@@ -88,6 +88,10 @@ csv.hotspot$Area <- apply(csv.hotspot, 1, function(hotspot){
   } else{x}
   as.factor(x)
 })
+csv.hotspot$Total_Kes <- (function(){
+  x <- as.numeric(csv.hotspot$Total_Kes)
+  x <- ifelse(is.na(x), yes = 0, no = x)
+})()
 csv.hotspot<-csv.hotspot[!(csv.hotspot$Area %in% c("Barat_Daya", "K.Kangsar")),]
 #[END]data cleanup
 
@@ -101,6 +105,7 @@ csv.hotspot<-csv.hotspot[!(csv.hotspot$Area %in% c("Barat_Daya", "K.Kangsar")),]
 # )
 
 listyearweek <- list(Year=csv.weather$Year, Week=csv.weather$Week)  
+Wind_mean_weekly = aggregate(csv.weather$Wind_mean_24Hr, csv.weather$Week, mean, na.rm=T, simplify = T)
 Wind_mean_weekly = aggregate(csv.weather$Wind_mean_24Hr, listyearweek, mean, na.rm=T, simplify = T)
 Rainfall_mm_mean_weekly =  aggregate(csv.weather$Rainfall_mm.fix, listyearweek, mean, na.rm=T)
 Humidity_mean_weekly = aggregate(csv.weather$Humidity.fix, listyearweek, mean, na.rm=T)
@@ -117,40 +122,60 @@ csv.denguedata.2014_2015 <- Reduce(
   (list(csv.hotspot, Wind_mean_weekly, Rainfall_mm_mean_weekly, Humidity_mean_weekly, Solar_Radiation_Mjm2_mean_weekly))
 )
 
-#write dengue_data_2014-2015.csv
-write.csv(csv.denguedata.2014_2015, "dengue_data_2014-2015.csv")
+csv.denguedata.2014_2015 <- Reduce(
+  function(x,y) {
+    merge(x,y, by = c("Year","Week"))
+  },
+  (list(csv.hotspot, Wind_mean_weekly, Rainfall_mm_mean_weekly, Humidity_mean_weekly, Solar_Radiation_Mjm2_mean_weekly))
+)
 
-View(mukimselangorpop)
-mukimselangorpop <- (function(){
-  x<-read.csv("mukim_selangor_pop01.csv", header = F)
-  names(x) <- c("Area", "Population")
-  x$Area 
+# open mukim selangor pop csv file
+selangorpop <- (function(){
+  x<-read.csv("mukim_selangor_poptot.filtered.csv", header = F)
+  names(x) <- c("Area", "Area_Population")  
+  x <- x[x$Area_Population!="",]
+  isMukim <- grepl("[a-z]", x$Area, ignore.case = F)
+  x$Area <- str_trim(x$Area)
+  x <- x[!isMukim,]
+  x <- x[x$Area!="JUMLAH",]
   
-  x <- x[x$Population!="",]
-  x$Population <-apply(x, MARGIN = 1, function(y){
-    as.numeric(gsub(y["Population"], pattern = "[ ,]", replacement = ""))
+  x$Area_Population <-apply(x, MARGIN = 1, function(y){
+    as.numeric(gsub(y["Area_Population"], pattern = "[ ,]", replacement = ""))
   })
   
+  x$Area <- sapply(x$Area, function(y){  
+    y<-gsub("ULU ","HULU ",y)
+    y<-gsub(" ", "_", str_to_title(y))
+  })
+  x 
 })()
-# open mukim selangor pop csv file
-
 
 csv.denguedata.2014_2015_pop <- Reduce(
   function(x,y) {
-    merge(x,y, by = c("Year","Week"))
+    merge(x,y, by = "Area")
   },
-  (list(csv.hotspot, Wind_mean_weekly, Rainfall_mm_mean_weekly, Humidity_mean_weekly, Solar_Radiation_Mjm2_mean_weekly))
+  (list(csv.denguedata.2014_2015, selangorpop))
 )
 
-str(csv.denguedata.2014_2015_pop)
-csv.denguedata.2014_2015_pop <- Reduce(
-  function(x,y) {
-    merge(x,y, by = c("Year","Week"))
-  },
-  (list(csv.hotspot, Wind_mean_weekly, Rainfall_mm_mean_weekly, Humidity_mean_weekly, Solar_Radiation_Mjm2_mean_weekly))
-)
+#write dengue_data_2014-2015.csv
+write.csv(csv.denguedata.2014_2015_pop, "dengue_data_2014-2015.csv")
 
-csv.denguedata.2014_2015_pop
+names(csv.denguedata.2014_2015_pop)
+outbreak_by_area_weekly <- (function(){
+  x <-aggregate(csv.denguedata.2014_2015_pop$Total_Kes, 
+                by=list(Year=csv.denguedata.2014_2015_pop$Year, Week=csv.denguedata.2014_2015_pop$Week, 
+                Area = csv.denguedata.2014_2015_pop$Area), FUN="sum", na.rm=TRUE)
+  names(x)[4] <- "Total.Area.Case"
+  x
+})()
+
+
+ggplot(data=outbreak_by_area_weekly, aes(x=Week, y=Total.Area.Case)) +
+  geom_bar(stat="identity", position=position_dodge())
+
+
+print(aggdata)
+detach(mtcars)
 
 #ADMINISTRATION
 
