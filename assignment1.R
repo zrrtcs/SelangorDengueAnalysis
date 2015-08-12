@@ -16,6 +16,8 @@ csv.hotspot.2015 <- (function(){
 weekno.20140901 <- as.integer(format(as.Date("2014-09-01", format = "%Y-%m-%d"), "%U"))
 weekno.20150430 <- as.integer(format(as.Date("2015-04-30", format = "%Y-%m-%d"), "%U"))
 
+# combining the two csv files containing the dengue hotspot data
+# from 1st September 2014 till 30th April 2015
 csv.hotspot <- 
   rbind(csv.hotspot.2014[csv.hotspot.2014$Week >= weekno.20140901,], 
         csv.hotspot.2015[csv.hotspot.2015$Week <= weekno.20150430,])
@@ -105,15 +107,60 @@ Humidity_mean_weekly = aggregate(csv.weather$Humidity.fix, listyearweek, mean, n
 Solar_Radiation_Mjm2_mean_weekly =  aggregate(csv.weather$Solar_Radiation_Mjm2.fix, listyearweek, mean, na.rm=T)
 
 names(Wind_mean_weekly)[3] = "Wind_mean_weekly"
-names(Rainfall_mm_mean_weekly)[3]  = "Rainfall_mm"
-names(Humidity_mean_weekly)[3] = "Humidity"
-names(Solar_Radiation_Mjm2_mean_weekly)[3] = "Solar_Radiation_Mjm2"
+names(Rainfall_mm_mean_weekly)[3]  = "Rainfall_mm_mean_weekly"
+names(Humidity_mean_weekly)[3] = "Humidity_mean_weekly"
+names(Solar_Radiation_Mjm2_mean_weekly)[3] = "Solar_Radiation_Mjm2_mean_weekly"
 csv.denguedata.2014_2015 <- Reduce(
   function(x,y) {
     merge(x,y, by = c("Year","Week"))
   },
   (list(csv.hotspot, Wind_mean_weekly, Rainfall_mm_mean_weekly, Humidity_mean_weekly, Solar_Radiation_Mjm2_mean_weekly))
 )
+
+#write dengue_data_2014-2015.csv
+write.csv(csv.denguedata.2014_2015, "dengue_data_2014-2015.csv")
+
+View(mukimselangorpop)
+mukimselangorpop <- (function(){
+  x<-read.csv("mukim_selangor_pop01.csv", header = F)
+  names(x) <- c("Area", "Population")
+  x$Area 
+  
+  x <- x[x$Population!="",]
+  x$Population <-apply(x, MARGIN = 1, function(y){
+    as.numeric(gsub(y["Population"], pattern = "[ ,]", replacement = ""))
+  })
+  
+})()
+# open mukim selangor pop csv file
+
+
+csv.denguedata.2014_2015_pop <- Reduce(
+  function(x,y) {
+    merge(x,y, by = c("Year","Week"))
+  },
+  (list(csv.hotspot, Wind_mean_weekly, Rainfall_mm_mean_weekly, Humidity_mean_weekly, Solar_Radiation_Mjm2_mean_weekly))
+)
+
+str(csv.denguedata.2014_2015_pop)
+csv.denguedata.2014_2015_pop <- Reduce(
+  function(x,y) {
+    merge(x,y, by = c("Year","Week"))
+  },
+  (list(csv.hotspot, Wind_mean_weekly, Rainfall_mm_mean_weekly, Humidity_mean_weekly, Solar_Radiation_Mjm2_mean_weekly))
+)
+
+csv.denguedata.2014_2015_pop
+
+#ADMINISTRATION
+
+# Create a new column in dengue_data_2014_2015.csv to include population information.
+
+# LIBRARY loading
+# ggplot library
+library(ggplot2)
+
+ggplot()
 
 # # R factor to numeric conversion
 # # http://stackoverflow.com/questions/3418128/how-to-convert-a-factor-to-an-integer-numeric-without-a-loss-of-information
