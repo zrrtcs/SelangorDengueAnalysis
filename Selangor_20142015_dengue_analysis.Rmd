@@ -1,3 +1,12 @@
+---
+title: "Selangor Dengue Analysis from September 2014 to April 2015"
+author: "Aizzat Suhardi"
+date: "August 18, 2015"
+output: html_document
+---
+
+```{r, echo=F, warning=F}
+
 # install.packages("stringr", dependencies=TRUE)
 library(stringr)
 setwd("/Users/pzagmatic/Zevelopment/SESAMasters/TMA7021 Data Mining/tutorial/Assignment1")
@@ -55,7 +64,7 @@ csv.weather$Solar_Radiation_Mjm2.fix <- (function(){
   fix <- as.numeric(as.character.factor(csv.weather$Solar_Radiation_Mjm2))
   ifelse(test = (is.na(fix) | fix < 0), yes = 0, no = fix)
 })()
-summary(csv.weather)
+
 csv.hotspot$Location <- sapply(csv.hotspot$Location, function(x){
   x <- gsub(pattern = "\\s",replacement = "_", perl=T, x = x)
   x <- gsub(pattern = "[()\\[\\]{}]",replacement = "", perl=T, x = x)
@@ -96,17 +105,36 @@ csv.hotspot$Total_Kes <- (function(){
 })()
 csv.hotspot<-csv.hotspot[!(csv.hotspot$Area %in% c("Barat_Daya", "K.Kangsar")),]
 #[END]data cleanup
+```
 
-# library(dplyr)
-# csv.weather.YW <- csv.weather %>% group_by(Year, Week)
-# inner_join(
-#   csv.weather.YW %>% summarise(Wind_mean_weekly = mean(Wind_mean_24Hr)),
-#   csv.weather.YW %>% summarise(Rainfall_mm_mean_weekly = mean(Rainfall_mm.fix)),
-#   csv.weather.YW %>% summarise(Humidity_mean_weekly = mean(Humidity.fix)),
-#   csv.weather.YW %>% summarise(Solar_Radiation_Mjm2_mean_weekly = mean(Solar_Radiation_Mjm2.fix))
-# )
+####Dimensions of dengue outbreak dataset
+```{r, echo=FALSE}
+ch.row<-nrow(csv.hotspot)
+names(ch.row) <- c("Row numbers of dengue outbreak dataset")
+print(ch.row)
+```
 
+####Summary of dengue outbreak dataset
+```{r, echo=FALSE}
+summary(csv.hotspot)
+```
+
+
+####Dimensions of weather datasets
+```{r, echo=FALSE}
+cw.row<-nrow(csv.weather)
+names(cw.row) <- c("Row numbers of weather dataset")
+print(cw.row)
+```
+
+####Summary of weather dataset
+```{r, echo=FALSE}
+summary(csv.weather)
+```
+
+```{r, echo=FALSE}
 listyearweek <- list(Year=csv.weather$Year, Week=csv.weather$Week)  
+
 Wind_mean_weekly <- aggregate(csv.weather$Wind_mean_24Hr, listyearweek, mean, na.rm=T, simplify = T)
 Rainfall_mm_mean_weekly <-  aggregate(csv.weather$Rainfall_mm.fix, listyearweek, mean, na.rm=T)
 Humidity_mean_weekly <- aggregate(csv.weather$Humidity.fix, listyearweek, mean, na.rm=T)
@@ -161,7 +189,6 @@ csv.denguedata.2014_2015_pop <- Reduce(
 #write dengue_data_2014-2015.csv
 write.csv(csv.denguedata.2014_2015_pop, "dengue_data_2014-2015.csv")
 
-names(csv.denguedata.2014_2015_pop)
 outbreak_by_area_weekly <- (function(){
   x <-aggregate(csv.denguedata.2014_2015_pop$Total_Kes, 
                 by=list(Year=csv.denguedata.2014_2015_pop$Year, Week=csv.denguedata.2014_2015_pop$Week, 
@@ -197,24 +224,28 @@ outbreak_by_area_weekly.dt.with.casepopratio <- (function(){
 # LIBRARY loading
 # ggplot library
 library(ggplot2)
-
-# ggplot(data=outbreak_by_area_weekly.dt, aes(x=Year.Week, y=Total.Area.Case, fill=Area)) +
-#   geom_bar(stat="identity", position=position_dodge()) +
-#   coord_flip()
+```
 
 
-for(yw in outbreak_by_area_weekly.dt[,Year.Week]){
-  xxx <- outbreak_by_area_weekly.dt[Year.Week==yw]  
-  ggplot(data=xxx, aes(x=Area, y=Total.Area.Case)) +
-    geom_bar(stat="identity", position=position_dodge())
-}
+```{r, echo=FALSE}
+
+
+# for(yw in outbreak_by_area_weekly.dt[,Year.Week]){
+#   xxx <- outbreak_by_area_weekly.dt[Year.Week==yw]  
+#   print(
+#     ggplot(data=xxx, aes(x=Area, y=Total.Area.Case)) +
+#     geom_bar(stat="identity", position=position_dodge())
+#   )
+# }
+```
+
+```{r, echo=FALSE}
+
+
+
   ggplot(data=outbreak_by_area_weekly.dt, aes(x=Year.Week, y=Total.Area.Case, fill=Area)) +
     geom_bar(stat="identity", position=position_dodge()) +
     coord_flip()
-
-ggplot(data=outbreak_by_area_weekly.dt, aes(x=Year.Week, y=Total.Area.Case, fill=Area)) +
-  geom_bar(stat="identity", position=position_dodge()) +
-  coord_flip()
 
 ggplot(area_pop, aes(x=Area, y=Area_Population)) +
   geom_bar(stat="identity", position=position_dodge())
@@ -222,3 +253,4 @@ ggplot(area_pop, aes(x=Area, y=Area_Population)) +
 ggplot(data=outbreak_by_area_weekly.dt.with.casepopratio, aes(x=Year.Week, y=Case.Population.Ratio, fill=Area)) +
   geom_bar(stat="identity", position=position_dodge()) +
   coord_flip()
+```
